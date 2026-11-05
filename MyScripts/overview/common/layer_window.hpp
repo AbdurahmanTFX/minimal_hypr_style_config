@@ -39,6 +39,11 @@ public:
         dirty_ = true;
     }
 
+    // Панель, спрятанная на special-воркспейсе, фокуса клавиатуры не имеет.
+    bool has_keyboard_focus() const {
+        return keyboard_focused_;
+    }
+
     /*
      * Мгновенно убрать surface с экрана и, что особенно важно,
      * прекратить держать keyboard focus.
@@ -145,6 +150,7 @@ private:
     xkb_context *xkb_ctx_    = nullptr;
     xkb_keymap  *xkb_keymap_ = nullptr;
     xkb_state   *xkb_state_  = nullptr;
+    bool keyboard_focused_   = false;
 
     Buffer buffers_[2];
 

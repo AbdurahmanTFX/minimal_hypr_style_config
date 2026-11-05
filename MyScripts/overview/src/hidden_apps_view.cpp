@@ -497,6 +497,9 @@ int main(int argc, char *argv[])
             terminate();
             return;
         }
+        // Скрытой панели хватает флага выше.
+        if (!win->has_keyboard_focus())
+            return;
         reload();
     });
 

@@ -203,20 +203,22 @@ void LayerWindow::kbd_keymap(
 }
 
 void LayerWindow::kbd_enter(
-    void *,
+    void *data,
     wl_keyboard *,
     uint32_t,
     wl_surface *,
     wl_array *)
 {
+    static_cast<LayerWindow *>(data)->keyboard_focused_ = true;
 }
 
 void LayerWindow::kbd_leave(
-    void *,
+    void *data,
     wl_keyboard *,
     uint32_t,
     wl_surface *)
 {
+    static_cast<LayerWindow *>(data)->keyboard_focused_ = false;
 }
 
 void LayerWindow::kbd_key(

@@ -18,6 +18,7 @@
 #include <ftxui/screen/color.hpp>
 
 #include <algorithm>
+#include <atomic>
 #include <csignal>
 #include <cstdio>
 #include <cstdlib>
@@ -269,6 +270,11 @@ class Dashboard {
     LoadNotes();
     UpdateQuicknote();
 
+    // Просим терминал сообщать о фокусе (ESC[I / ESC[O): скрытому dashboard
+    // незачем обновляться, см. TickerLoop.
+    fputs("\x1b[?1004h", stdout);
+    fflush(stdout);
+
     ticker_ = std::thread([this] { TickerLoop(); });
     ticker_.detach();
   }
@@ -277,6 +283,8 @@ class Dashboard {
   // главном потоке ПОСЛЕ выхода из screen.Loop(), поэтому безопасна
   // (в отличие от вызова файлового I/O прямо в обработчике сигнала).
   void Shutdown() {
+    fputs("\x1b[?1004l", stdout);
+    fflush(stdout);
     SaveNotes();
     FireAndForget("hyprctl dispatch 'hl.dsp.submap(\"reset\")' >/dev/null 2>&1");
   }
@@ -717,6 +725,9 @@ class Dashboard {
     int counter = 0;
     while (true) {
       std::this_thread::sleep_for(std::chrono::seconds(1));
+      // Окна не видно (или поверх него открыт nvim): не тратим батарею.
+      if (!focused_)
+        continue;
       ++counter;
 
       UpdateTime();
@@ -757,6 +768,27 @@ class Dashboard {
         counter = 0;
       Wake();
     }
+  }
+
+  // Пока окна не было видно, данные не обновлялись: показываем свежие сразу.
+  void RefreshAfterFocus() {
+    UpdateTime();
+    UpdateWorkspace();
+    UpdateLayout();
+    UpdateNotifMode();
+    Tab tab;
+    {
+      std::lock_guard<std::mutex> lk(mu_);
+      tab = cur_tab_;
+    }
+    switch (tab) {
+      case TAB_SYS:   UpdateBrightness(); UpdateSys();            break;
+      case TAB_AUDIO: UpdateAudio();                              break;
+      case TAB_NOTIF: UpdateNotifs();                             break;
+      case TAB_WIN:   UpdateWindows(); UpdateBgProcs();           break;
+      case TAB_NOTES: UpdateQuicknote();                          break;
+    }
+    Wake();
   }
 
   // -------------------------------------------------------- действия ----
@@ -1062,6 +1094,20 @@ class Dashboard {
   // -------------------------------------------------------- клавиши -----
 
   bool HandleKey(const Event& event) {
+    // Потеря фокуса: FTXUI превращает ESC[O в тот же код, что и у клавиши F3.
+    if (event == Event::F3) {
+      focused_ = false;
+      return true;
+    }
+    if (event.input() == "\x1b[I") {
+      focused_ = true;
+      std::thread([this] { RefreshAfterFocus(); }).detach();
+      return true;
+    }
+    // Пришло нажатие, значит фокус есть: настоящий F3 не должен заморозить экран.
+    if (!focused_ && event != Event::Custom)
+      focused_ = true;
+
     bool add_modal;
     {
       std::lock_guard<std::mutex> lk(mu_);
@@ -1477,6 +1523,9 @@ class Dashboard {
 
   ScreenInteractive* screen_;
   std::mutex mu_;
+  // Считаем окно видимым, пока терминал не скажет обратное: если сообщений о
+  // фокусе не будет, dashboard просто работает как раньше.
+  std::atomic<bool> focused_{true};
   std::thread ticker_;
 
   Tab cur_tab_ = TAB_SYS;
