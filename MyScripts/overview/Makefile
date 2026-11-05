@@ -82,13 +82,13 @@ $(GEN_DIR)/wlr-layer-shell-unstable-v1-protocol.o: $(PROTO_SRC) $(PROTO_HDR)
 $(COMMON_DIR)/layer_window.o: $(COMMON_DIR)/layer_window.cpp $(COMMON_DIR)/layer_window.hpp $(PROTO_HDR) $(XDG_HDR)
 	$(CXX) $(CXXFLAGS) $(PKG_CFLAGS) -I$(GEN_DIR) -c $< -o $@
 
-profile-overview: $(SRC_DIR)/profile_overview.cpp $(COMMON_OBJS) $(PROTO_HDR) config.h
+profile-overview: $(SRC_DIR)/profile_overview.cpp $(COMMON_OBJS) $(PROTO_HDR) ../config.h common/proc_helpers.hpp
 	$(CXX) $(CXXFLAGS) $(PKG_CFLAGS) -I$(GEN_DIR) $< $(COMMON_OBJS) -o $@ $(PKG_LIBS)
 
-ws-overview: $(SRC_DIR)/ws_overview.cpp $(COMMON_OBJS) $(PROTO_HDR) config.h
+ws-overview: $(SRC_DIR)/ws_overview.cpp $(COMMON_OBJS) $(PROTO_HDR) ../config.h common/proc_helpers.hpp
 	$(CXX) $(CXXFLAGS) $(PKG_CFLAGS) -I$(GEN_DIR) $< $(COMMON_OBJS) -o $@ $(PKG_LIBS)
 
-hidden-apps-view: $(SRC_DIR)/hidden_apps_view.cpp $(COMMON_OBJS) $(PROTO_HDR) config.h
+hidden-apps-view: $(SRC_DIR)/hidden_apps_view.cpp $(COMMON_OBJS) $(PROTO_HDR) ../config.h common/proc_helpers.hpp
 	$(CXX) $(CXXFLAGS) $(PKG_CFLAGS) -I$(GEN_DIR) $< $(COMMON_OBJS) -o $@ $(PKG_LIBS)
 
 clean:

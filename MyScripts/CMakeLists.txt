@@ -10,10 +10,8 @@
 #   ./build/bt-popup
 #   ./build/dashboard
 #
-# Готовые бинарники можно скопировать в ~/.config/hypr/ так же, как раньше
-# (см. `make install` в соседнем Makefile — он умеет собрать этот проект
-# и разложить бинарники по местам вместе с ws-overview/profile-overview,
-# которые остались на GTK4).
+# Обычно достаточно `make install` в соседнем Makefile: он соберёт этот проект
+# и overview/ и разложит бинарники по ~/.config/hypr/.
 
 cmake_minimum_required(VERSION 3.14)
 project(hypr-popups CXX)

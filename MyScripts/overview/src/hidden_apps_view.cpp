@@ -14,7 +14,7 @@
 #include "../common/layer_window.hpp"
 #include "../common/draw_helpers.hpp"
 #include "../common/proc_helpers.hpp"
-#include "../config.h"
+#include "../../config.h"
 
 #include <cstdio>
 #include <cstdlib>

@@ -45,7 +45,7 @@ Wayland-приложение, не терминальное** — запуска
 
 ```
 hypr-overview/
-  config.h                     — ваш конфиг (без изменений)
+  ../config.h                  — ваш конфиг, общий с dashboard
   common/
     layer_window.hpp/.cpp      — обвязка Wayland layer-shell + Cairo + событийный луп
     draw_helpers.hpp           — set_color/rounded_rect/status_frame
