@@ -1,0 +1,36 @@
+# Собранные программы: исходники в MyScripts/, сборка через make -C MyScripts install
+/dashboard
+/bt-popup
+/wifi-popup
+/ws-overview
+/profile-overview
+/hidden-apps-view
+MyScripts/dashboard
+MyScripts/bt-popup
+MyScripts/wifi-popup
+MyScripts/build/
+MyScripts/overview/ws-overview
+MyScripts/overview/profile-overview
+MyScripts/overview/hidden-apps-view
+MyScripts/overview/gen/
+*.o
+
+# Личное: список заметок и настройки звука, которые пишет dashboard
+/dashboard_notes.dat
+/notif_sound.dat
+
+# Звук скачан со стороннего сайта, лицензия неизвестна. Без него играет системный
+/sounds/
+
+# Старые архивы версий
+MyScripts/backup/
+
+# Служебные файлы инструментов
+.claude/
+MyScripts/.claude/
+MyScripts/memory/
+compile_commands.json
+.cache/
+
+# Плагины Hyprland собираются отдельно
+/plugins/
