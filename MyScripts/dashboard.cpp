@@ -13,6 +13,7 @@
 #include <ftxui/component/captured_mouse.hpp>
 #include <ftxui/component/component.hpp>
 #include <ftxui/component/event.hpp>
+#include "layout_keys.hpp"
 #include <ftxui/component/screen_interactive.hpp>
 #include <ftxui/dom/elements.hpp>
 #include <ftxui/screen/color.hpp>
@@ -1130,6 +1131,11 @@ class Dashboard {
       return true;
     }
 
+    return HandleCommand(LatinKey(event));
+  }
+
+  // Клавиши вне текстового ввода, русская раскладка уже переведена в латиницу.
+  bool HandleCommand(const Event& event) {
     // // -- отложенный ESC: ESC+h / ESC+l = переключение вкладки (Alt+h/l в
     // //    большинстве терминалов приходит как два байта ESC, 'h'/'l') --
     // if (pending_escape_) {

@@ -248,6 +248,23 @@ void LayerWindow::kbd_key(
     if (sym == XKB_KEY_NoSymbol)
         return;
 
+    // В русской раскладке буквы приходят кириллицей, а панели ждут латиницу:
+    // берём символ той же клавиши из первой раскладки.
+    if (xkb_keysym_to_utf32(sym) >= 0x80) {
+        const xkb_keysym_t *syms = nullptr;
+        const xkb_level_index_t level =
+            xkb_state_key_get_level(
+                self->xkb_state_,
+                key + 8,
+                xkb_state_key_get_layout(self->xkb_state_, key + 8));
+
+        if (xkb_keymap_key_get_syms_by_level(
+                self->xkb_keymap_, key + 8, 0, level, &syms) > 0) {
+
+            sym = syms[0];
+        }
+    }
+
     if (self->key_fn_)
         self->key_fn_(sym);
 }

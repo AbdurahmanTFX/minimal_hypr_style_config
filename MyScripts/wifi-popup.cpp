@@ -8,6 +8,7 @@
 #include <ftxui/component/captured_mouse.hpp>
 #include <ftxui/component/component.hpp>
 #include <ftxui/component/event.hpp>
+#include "layout_keys.hpp"
 #include <ftxui/component/screen_interactive.hpp>
 #include <ftxui/dom/elements.hpp>
 #include <ftxui/screen/color.hpp>
@@ -423,6 +424,11 @@ class WifiApp {
       return true;  // поглощаем остальные события, пока диалог открыт
     }
 
+    return HandleCommand(LatinKey(event));
+  }
+
+  // Клавиши вне диалога пароля, русская раскладка уже переведена в латиницу.
+  bool HandleCommand(const Event& event) {
     if (event == Event::Character('j') || event == Event::ArrowDown) {
       MoveSel(1);
       return true;

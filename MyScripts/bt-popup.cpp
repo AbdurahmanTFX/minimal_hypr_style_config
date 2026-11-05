@@ -7,6 +7,7 @@
 #include <ftxui/component/component.hpp>
 #include <ftxui/component/component_options.hpp>
 #include <ftxui/component/event.hpp>
+#include "layout_keys.hpp"
 #include <ftxui/component/screen_interactive.hpp>
 #include <ftxui/dom/elements.hpp>
 #include <ftxui/screen/color.hpp>
@@ -281,7 +282,8 @@ class BtApp {
     if (sel_ >= (int)devs_.size()) sel_ = (int)devs_.size() - 1;
   }
 
-  bool HandleKey(const Event& event) {
+  bool HandleKey(const Event& raw_event) {
+    const Event event = LatinKey(raw_event);
     if (event == Event::Character('j') || event == Event::ArrowDown) {
       MoveSel(1);
       return true;
