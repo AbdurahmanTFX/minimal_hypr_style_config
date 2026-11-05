@@ -43,15 +43,7 @@ TARGET_ID=$(hypr_id_of "$BASE" "$PROF")
 # переключениях на уже работающем процессе через HAV_RELOAD_FLAG).
 echo "$BASE $PROF $RETURN_POV" > "$HAV_TARGET_FILE"
 
-visible=$(hyprctl clients -j 2>/dev/null | python3 -c "
-import sys,json
-for c in json.load(sys.stdin):
-    if c.get('title') == 'hidden-apps-view':
-        ws = c.get('workspace',{}).get('name','')
-        print('visible' if 'special' not in ws else 'hidden')
-        exit()
-print('missing')
-")
+visible=$(panel_state title hidden-apps-view)
 
 # Открываем только если нет другой панели; закрывать всегда можно
 if [ "$visible" != "visible" ] && other_panel_open "hidden-apps-view"; then
@@ -75,10 +67,7 @@ case $visible in
         found=0
         for i in $(seq 1 40); do
             sleep 0.05
-            if hyprctl clients -j 2>/dev/null | python3 -c "
-import sys,json
-exit(0 if any(c.get('title')=='hidden-apps-view' for c in json.load(sys.stdin)) else 1)
-" 2>/dev/null; then
+            if [ "$(panel_state title hidden-apps-view)" != missing ]; then
                 found=1
                 break
             fi

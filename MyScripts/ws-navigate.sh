@@ -33,7 +33,7 @@ goto_ws() {
     cur_prof=$(profile_of $RAW_ID)
     save_profile $BASE $cur_prof
     save_cache_profile $BASE $cur_prof
-    capture_ws_async $BASE $cur_prof
+    capture_ws $BASE $cur_prof
     # Перейти
     local target_id
     target_id=$(hypr_id_of $target_base $target_prof)

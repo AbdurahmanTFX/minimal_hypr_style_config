@@ -19,7 +19,7 @@
 #define PROFILE_N(id)   (((id)-1) / WS_COUNT + 1)    /* 1-based */
 #define HYPR_ID(base, prof) ((base) + ((prof)-1) * WS_COUNT)
 
-/* ── Монитор (для масштабирования окон) ─────────────────── */
+/* ── Монитор: запасной размер, обычно берётся настоящий ─── */
 #define MON_W           1366
 #define MON_H           768
 

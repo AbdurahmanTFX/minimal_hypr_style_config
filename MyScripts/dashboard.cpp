@@ -48,7 +48,7 @@ enum NotifMode { NOTIF_NORMAL = 0, NOTIF_SILENT, NOTIF_HIDE };
 
 std::string HomeDir() {
   const char* home = getenv("HOME");
-  return home ? home : "/home/tfx";
+  return home ? home : "";
 }
 
 std::string ShellQuote(const std::string& s) {
@@ -329,8 +329,7 @@ class Dashboard {
 
   void UpdateWorkspace() {
     std::string out = RunCapture(
-        "hyprctl activeworkspace -j 2>/dev/null | python3 -c \"import "
-        "sys,json; d=json.load(sys.stdin); print(d.get('id',1))\"");
+        "hyprctl activeworkspace -j 2>/dev/null | jq -r '.id // 1'");
     int ws_raw = out.empty() ? 1 : atoi(out.c_str());
     std::lock_guard<std::mutex> lk(mu_);
     ws_id_ = ((ws_raw - 1) % 6) + 1;
@@ -594,7 +593,7 @@ class Dashboard {
   void UpdateBgProcs() {
     static const char* known[] = {"nextcloud",     "syncthing", "pipewire",
                                    "wireplumber",   "nm-applet", "blueman-applet",
-                                   "dunst",         "swww",      nullptr};
+                                   "dunst",         "awww-daemon", nullptr};
     std::vector<BgProc> procs;
     for (int i = 0; known[i]; ++i) {
       std::string out =

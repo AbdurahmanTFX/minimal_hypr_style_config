@@ -61,8 +61,7 @@ PROFILE_LABELS=("" "P1" "P2" "P3" "P4" "P5" "P6" "P7" "P8" "P9")
 
 # Текущий Hyprland WS ID
 current_ws_id() {
-    hyprctl activeworkspace -j 2>/dev/null \
-        | python3 -c "import sys,json; print(json.load(sys.stdin).get('id',1))"
+    hyprctl activeworkspace -j 2>/dev/null | jq -r '.id // 1'
 }
 
 # base_ws (1-6) из hypr id
@@ -176,19 +175,22 @@ other_panel_open() {
         return 0
     fi
 
-    hyprctl clients -j 2>/dev/null | python3 -c "
-import sys,json
-me='$me'
-panel_names = ('dashboard','ws-overview','profile-overview','hidden-apps-view')
-for c in json.load(sys.stdin):
-    cl=c.get('class',''); ti=c.get('title','')
-    ws=c.get('workspace',{}).get('name','')
-    if 'special' in ws: continue
-    if cl==me or ti==me: continue
-    if cl in panel_names or ti in panel_names:
-        exit(0)
-exit(1)
-"
+    hyprctl clients -j 2>/dev/null | jq -e --arg me "$me" '
+        def panel: IN("dashboard", "ws-overview", "profile-overview", "hidden-apps-view");
+        any(.[];
+            (.workspace.name // "" | contains("special") | not)
+            and .class != $me and .title != $me
+            and ((.class | panel) or (.title | panel)))' >/dev/null
+}
+
+# Где панель: visible, hidden (на special-воркспейсе) или missing.
+# Использование: panel_state title ws-overview, panel_state class dashboard
+panel_state() {
+    hyprctl clients -j 2>/dev/null | jq -r --arg field "$1" --arg name "$2" '
+        ([ .[] | select(.[$field] == $name) ] | first) as $w
+        | if $w == null then "missing"
+          elif ($w.workspace.name | contains("special")) then "hidden"
+          else "visible" end'
 }
 
 # Создать директории хранения
@@ -199,15 +201,18 @@ init_storage() {
     mkdir -p "$HIDDEN_APPS_DIR" 2>/dev/null || true
 }
 
-# Асинхронный захват скриншота профиля
-# Сохраняет ws_BASE_pPROF.png (для profile-overview)
-# и ws_BASE_latest.png (для ws-overview), затем поднимает флаги обновления
-capture_ws_async() {
+# Снимок экрана для превью профиля: ws_BASE_pPROF.png (для profile-overview) и
+# ws_BASE_latest.png (для ws-overview), затем флаги обновления панелей.
+# Вызывать ДО перехода и дожидаться завершения: снимок в фоне попадал на кадр
+# анимации перехода. -l 0 (без сжатия): около 30 мс вместо 80, переключение столов
+# не замедляется; файлы лежат в /tmp, а там их объём не так важен.
+capture_ws() {
     local base=$1 prof=$2
     local pfile="$WS_CACHE_DIR/ws_${base}_p${prof}.png"
     local lfile="$WS_CACHE_DIR/ws_${base}_latest.png"
-    (grim -o eDP-1 "$pfile" 2>/dev/null && \
-     ln -f "$pfile" "$lfile" 2>/dev/null; \
-     touch "$OV_RELOAD_FLAG"  2>/dev/null; \
-     touch "$POV_RELOAD_FLAG" 2>/dev/null) &
+    local monitor
+    monitor=$(hyprctl activeworkspace -j 2>/dev/null | jq -r '.monitor // empty')
+    grim -l 0 ${monitor:+-o "$monitor"} "$pfile" 2>/dev/null \
+        && ln -f "$pfile" "$lfile" 2>/dev/null
+    touch "$OV_RELOAD_FLAG" "$POV_RELOAD_FLAG" 2>/dev/null
 }

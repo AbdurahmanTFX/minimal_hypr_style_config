@@ -44,6 +44,26 @@ inline int active_workspace_id()
     return id;
 }
 
+// Логический размер активного монитора (с учётом scale). При сбое w и h не меняются.
+inline void active_monitor_size(int &w, int &h)
+{
+    FILE *fp = popen(
+        "hyprctl monitors -j 2>/dev/null | jq -r 'first(.[] | select(.focused)) | "
+        "\"\\(.width / .scale) \\(.height / .scale)\"' 2>/dev/null",
+        "r");
+    if (!fp)
+        return;
+
+    double mw = 0;
+    double mh = 0;
+    const int read = fscanf(fp, "%lf %lf", &mw, &mh);
+    pclose(fp);
+    if (read == 2 && mw >= 1 && mh >= 1) {
+        w = static_cast<int>(mw);
+        h = static_cast<int>(mh);
+    }
+}
+
 // Запускает `/bin/sh -c cmd` и сразу возвращает управление, не дожидаясь
 // завершения. Требует, чтобы где-то один раз было выставлено
 // signal(SIGCHLD, SIG_IGN) (см. main() в profile_overview.cpp /

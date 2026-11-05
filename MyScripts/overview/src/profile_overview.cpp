@@ -195,6 +195,11 @@ static int sel = 1;
 
 static LayerWindow *win = nullptr;
 
+// Размер активного монитора, обновляется в load_state(). До первого чтения и при
+// сбое используются значения из config.h.
+static int mon_w = MON_W;
+static int mon_h = MON_H;
+
 // ─────────────────────────── storage ─────────────────────────────
 
 static int read_altab_val(int bws)
@@ -378,6 +383,8 @@ static int read_prev_val(int bws)
 
 static void load_state()
 {
+    active_monitor_size(mon_w, mon_h);
+
     const int raw =
         active_workspace_id();
 
@@ -413,6 +420,13 @@ static void load_state()
         g.cur_prof > PROFILE_COUNT) {
 
         g.cur_prof = 1;
+    }
+
+    // Файл мог отстать от реальности, а профиль активного стола известен точно.
+    if (raw > 0 &&
+        BASE_WS(raw) == g.base_ws) {
+
+        g.cur_prof = PROFILE_N(raw);
     }
 
     g.altab_prof =
@@ -823,7 +837,7 @@ static void cell_geom(
         / POV_COLS;
 
     int ch =
-        cw * MON_H / MON_W;
+        cw * mon_h / mon_w;
 
     int mh =
         (avail_h -
@@ -833,7 +847,7 @@ static void cell_geom(
 
     if (ch > mh) {
         ch = mh;
-        cw = ch * MON_W / MON_H;
+        cw = ch * mon_w / mon_h;
     }
 
     *out_ox =
@@ -1660,12 +1674,9 @@ int main(
             }
 
             /*
-             * Не завязываемся на видимость: подхватываем свежий
-             * скриншот из capture_ws_async() (grim готовит его в фоне
-             * и может закончить чуть позже самого показа) независимо
-             * от того, запаркованы мы сейчас на special-workspace или
-             * нет — дешевле, чем гонять отдельную логику "не обновлять,
-             * пока не видно".
+             * Флаг поднимают только явные события (снимок экрана при
+             * переходе, открытие панели), поэтому реагируем на него и в
+             * скрытом состоянии: так панель всегда открывается свежей.
              */
             if (access(
                     POV_RELOAD_FLAG,

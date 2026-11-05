@@ -11,15 +11,7 @@ _dispatch() {
     hyprctl dispatch "$1"
 }
 
-visible=$(hyprctl clients -j 2>/dev/null | python3 -c "
-import sys,json
-for c in json.load(sys.stdin):
-    if c.get('title') == 'ws-overview':
-        ws = c.get('workspace',{}).get('name','')
-        print('visible' if 'special' not in ws else 'hidden')
-        exit()
-print('missing')
-")
+visible=$(panel_state title ws-overview)
 
 # Открываем только если нет другой панели; закрывать всегда можно
 if [ "$visible" != "visible" ] && other_panel_open "ws-overview"; then
@@ -32,7 +24,7 @@ case $visible in
         _dispatch 'hl.dsp.submap("reset")'
         ;;
     hidden)
-        capture_ws_async $(base_ws_of $(current_ws_id)) $(profile_of $(current_ws_id))
+        capture_ws $(base_ws_of $(current_ws_id)) $(profile_of $(current_ws_id))
         touch /tmp/ws-overview-reload
         _dispatch 'hl.dsp.window.move({ workspace = "e+0", window = "title:ws-overview", follow = false })'
         _dispatch 'hl.dsp.focus({ window = "title:ws-overview" })'
@@ -43,15 +35,12 @@ case $visible in
         # физически существует) — сначала закрыть его, потом спавнить
         # новый процесс.
         _dispatch 'hl.dsp.window.close({ window = "title:ws-overview" })' 2>/dev/null
-        capture_ws_async $(base_ws_of $(current_ws_id)) $(profile_of $(current_ws_id))
+        capture_ws $(base_ws_of $(current_ws_id)) $(profile_of $(current_ws_id))
         ~/.config/hypr/ws-overview &
         found=0
         for i in $(seq 1 20); do
             sleep 0.1
-            if hyprctl clients -j 2>/dev/null | python3 -c "
-import sys,json
-exit(0 if any(c.get('title')=='ws-overview' for c in json.load(sys.stdin)) else 1)
-" 2>/dev/null; then
+            if [ "$(panel_state title ws-overview)" != missing ]; then
                 found=1
                 break
             fi

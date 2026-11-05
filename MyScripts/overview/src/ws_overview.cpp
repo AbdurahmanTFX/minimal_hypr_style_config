@@ -28,6 +28,11 @@ static int g_lock_fd = -1;
 
 static LayerWindow *win = nullptr;
 
+// Размер активного монитора, обновляется в load_state(). До первого чтения и при
+// сбое используются значения из config.h.
+static int mon_w = MON_W;
+static int mon_h = MON_H;
+
 // ─────────────────────────── signal ──────────────────────────────
 
 static void signal_handler(int)
@@ -212,6 +217,8 @@ static int sel_ws = 0;
 
 static void load_state()
 {
+    active_monitor_size(mon_w, mon_h);
+
     const int raw =
         active_workspace_id();
 
@@ -669,7 +676,7 @@ static void draw_func(
         / WS_COLS;
 
     int ch =
-        cw * MON_H / MON_W;
+        cw * mon_h / mon_w;
 
     int mh =
         (height -
@@ -679,7 +686,7 @@ static void draw_func(
 
     if (ch > mh) {
         ch = mh;
-        cw = ch * MON_W / MON_H;
+        cw = ch * mon_w / mon_h;
     }
 
     const int ox =
@@ -693,10 +700,10 @@ static void draw_func(
           OV_GAP * (WS_ROWS + 1))) / 2;
 
     const double sx =
-        static_cast<double>(cw) / MON_W;
+        static_cast<double>(cw) / mon_w;
 
     const double sy =
-        static_cast<double>(ch) / MON_H;
+        static_cast<double>(ch) / mon_h;
 
     for (int ws = 0;
          ws < WS_COUNT;
@@ -1223,7 +1230,7 @@ static void on_click(
         / WS_COLS;
 
     int ch =
-        cw * MON_H / MON_W;
+        cw * mon_h / mon_w;
 
     int mh =
         (height -
@@ -1233,7 +1240,7 @@ static void on_click(
 
     if (ch > mh) {
         ch = mh;
-        cw = ch * MON_W / MON_H;
+        cw = ch * mon_w / mon_h;
     }
 
     const int ox =
@@ -1416,12 +1423,9 @@ int main()
             }
 
             /*
-             * Не завязываемся на видимость: подхватываем свежий
-             * скриншот из capture_ws_async() (grim готовит его в фоне
-             * и может закончить чуть позже самого показа) независимо
-             * от того, запаркованы мы сейчас на special-workspace или
-             * нет — дешевле, чем гонять отдельную логику "не обновлять,
-             * пока не видно".
+             * Флаг поднимают только явные события (снимок экрана при
+             * переходе, открытие панели), поэтому реагируем на него и в
+             * скрытом состоянии: так панель всегда открывается свежей.
              */
             if (access(
                     OV_RELOAD_FLAG,

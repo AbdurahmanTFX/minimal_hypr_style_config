@@ -39,7 +39,7 @@ if other_panel_open "showdesktop"; then
     exit 0
 fi
 
-current_ws=$(hyprctl activeworkspace -j | python3 -c "import sys,json; print(json.load(sys.stdin)['id'])")
+current_ws=$(current_ws_id)
 
 if [ -f "$STATE_FILE" ] && [ "$(cat "$STATE_FILE")" = "$current_ws" ]; then
     # Возвращаем окна обратно — в порядке от давно неактивного к недавно
@@ -61,9 +61,7 @@ if [ -f "$STATE_FILE" ] && [ "$(cat "$STATE_FILE")" = "$current_ws" ]; then
     rm -f "$STATE_FILE" "$HIDDEN_FILE" "$ACTIVE_FILE"
 else
     # Запоминаем активное окно — чтобы точно вернуть на него фокус
-    hyprctl activewindow -j 2>/dev/null \
-        | python3 -c "import sys,json; d=json.load(sys.stdin); print(d.get('address',''))" \
-        > "$ACTIVE_FILE"
+    hyprctl activewindow -j 2>/dev/null | jq -r '.address // ""' > "$ACTIVE_FILE"
 
     # Скрываем все окна текущего WS, запоминая порядок по focusHistoryID
     # (от давно активного к недавно активному) — этот же порядок
@@ -71,18 +69,11 @@ else
     # profile-overview/hidden-apps-view) исключаются явно — они не
     # "обычные" окна текущего рабочего стола, даже когда видны поверх
     # него (workspace "e+0" во время показа).
-    windows=$(hyprctl clients -j 2>/dev/null | python3 -c "
-import sys, json
-clients = json.load(sys.stdin)
-ws = $current_ws
-panel_names = ('dashboard', 'ws-overview', 'profile-overview', 'hidden-apps-view')
-result = [c for c in clients
-          if c.get('workspace', {}).get('id') == ws
-          and c.get('class') not in panel_names
-          and c.get('title') not in panel_names]
-result.sort(key=lambda c: -c.get('focusHistoryID', 0))
-print('\n'.join(c['address'] + '|' + str(ws) for c in result))
-" 2>/dev/null)
+    windows=$(hyprctl clients -j 2>/dev/null | jq -r --argjson ws "$current_ws" '
+        def panel: IN("dashboard", "ws-overview", "profile-overview", "hidden-apps-view");
+        [ .[] | select(.workspace.id == $ws and (.class | panel | not) and (.title | panel | not)) ]
+        | sort_by(-(.focusHistoryID // 0))
+        | .[] | "\(.address)|\($ws)"')
 
     if [ -z "$windows" ]; then
         rm -f "$ACTIVE_FILE"

@@ -49,7 +49,7 @@ case "$1" in
         TARGET_ID=$(hypr_id_of $BASE $TARGET_PROF)
         save_profile $BASE $TARGET_PROF
         echo "$TARGET_PROF" > "$WS_CACHE_DIR/ws_${BASE}.profile"
-        capture_ws_async $BASE $CURRENT_PROF
+        capture_ws $BASE $CURRENT_PROF
         _dispatch "hl.dsp.focus({ workspace = $TARGET_ID })"
         notify_profile $TARGET_PROF $BASE
         ;;
@@ -77,7 +77,7 @@ case "$1" in
         TARGET_ID=$(hypr_id_of $BASE $TARGET)
         save_profile $BASE $TARGET
         echo "$TARGET" > "$WS_CACHE_DIR/ws_${BASE}.profile"
-        capture_ws_async $BASE $CURRENT_PROF
+        capture_ws $BASE $CURRENT_PROF
         _dispatch "hl.dsp.focus({ workspace = $TARGET_ID })"
         notify_profile $TARGET $BASE
         ;;
@@ -94,11 +94,10 @@ case "$1" in
         TARGET_PROF="${2:-1}"
         if [ "$TARGET_PROF" -eq "$CURRENT_PROF" ]; then exit 0; fi
         TARGET_ID=$(hypr_id_of $BASE $TARGET_PROF)
-        WIN_ADDR=$(hyprctl activewindow -j | python3 -c \
-            "import sys,json; print(json.load(sys.stdin).get('address',''))")
+        WIN_ADDR=$(hyprctl activewindow -j | jq -r '.address // ""')
         if [ -n "$WIN_ADDR" ]; then
             _dispatch "hl.dsp.window.move({ workspace = $TARGET_ID, window = \"address:$WIN_ADDR\", follow = false })"
-            capture_ws_async $BASE $CURRENT_PROF
+            capture_ws $BASE $CURRENT_PROF
             _dispatch "hl.dsp.focus({ workspace = $TARGET_ID })"
             save_profile $BASE $TARGET_PROF
             echo "$TARGET_PROF" > "$WS_CACHE_DIR/ws_${BASE}.profile"

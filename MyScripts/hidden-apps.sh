@@ -53,19 +53,15 @@ case "$1" in
         [ -z "$WIN_JSON" ] && exit 0
         [ "$WIN_JSON" = "null" ] && exit 0
 
-        read -r ADDR WIN_WS <<<"$(echo "$WIN_JSON" | python3 -c "
-import sys,json
-d=json.load(sys.stdin)
-print(d.get('address',''), d.get('workspace',{}).get('id',0))
-")"
+        read -r ADDR WIN_WS <<<"$(echo "$WIN_JSON" | jq -r '"\(.address // "") \(.workspace.id // 0)"')"
         [ -z "$ADDR" ] && exit 0
         # Активное окно должно физически быть на текущем workspace —
         # иначе (см. комментарий выше про show-desktop) мы бы скрыли
         # чужое окно под ЭТИМ профилем.
         [ "$WIN_WS" != "$RAW_ID" ] && exit 0
 
-        CLASS=$(echo "$WIN_JSON" | python3 -c "import sys,json; print(json.load(sys.stdin).get('class',''))")
-        TITLE=$(echo "$WIN_JSON" | python3 -c "import sys,json; print(json.load(sys.stdin).get('title',''))")
+        CLASS=$(echo "$WIN_JSON" | jq -r '.class // ""')
+        TITLE=$(echo "$WIN_JSON" | jq -r '.title // ""')
 
         if is_panel "$CLASS" "$TITLE"; then
             exit 0
