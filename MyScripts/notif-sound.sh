@@ -8,6 +8,7 @@ muted=0
 [ -r "$NOTIF_SOUND_STATE" ] && source "$NOTIF_SOUND_STATE"
 
 (( muted )) && exit 0
+[ -r "$NOTIF_SOUND_FILE" ] || NOTIF_SOUND_FILE=/usr/share/sounds/freedesktop/stereo/message.oga
 # Низкий приоритет по смыслу не должен отвлекать звуком
 [ "$DUNST_URGENCY" = "LOW" ] && exit 0
 

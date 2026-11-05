@@ -25,7 +25,7 @@ case $visible in
         ;;
     missing)
         kitty --class dashboard \
-              --config ~/.config/kitty/dashboard.conf \
+              --config ~/.config/hypr/kitty-dashboard.conf \
               --override "remember_window_size=no" \
               --detach \
               ~/.config/hypr/dashboard

@@ -1,0 +1,154 @@
+# Всплывающие уведомления в стиле dashboard (hypr/MyScripts/dashboard.cpp).
+# Шрифт, фон и цвета — те же, что у kitty, в котором работает dashboard:
+#   cyan #8ea4a2, yellow #c4b28a, red #c4746e, white #c5c9c5 (kanagawa-dragon),
+#   фон #000000 при background_opacity 0.9 (= #000000e6).
+# Применить без перезапуска: dunstctl reload
+
+[global]
+    monitor = 0
+    follow = none
+
+    # offset совпадает с gaps_out из hyprland.lua. Нижней границы ширины нет,
+    # чтобы точка из hide-режима оставалась маленькой: правилом ширину не задать
+    width = (0, 420)
+    height = (0, 300)
+    origin = top-right
+    offset = (7, 7)
+    notification_limit = 20
+    indicate_hidden = yes
+
+    # Рамка — как border у модалки dashboard: тонкая, без скруглений
+    frame_width = 1
+    corner_radius = 0
+    gap_size = 6
+    padding = 8
+    horizontal_padding = 10
+    text_icon_padding = 10
+
+    font = JetBrainsMono Nerd Font 11
+    markup = full
+    # "▶" + cyan — так dashboard рисует выбранную строку
+    format = "<span foreground='#8ea4a2'><b>▶ %s</b></span>\n%b"
+    alignment = left
+    vertical_alignment = center
+    ellipsize = middle
+    ignore_newline = no
+    show_age_threshold = 60
+    stack_duplicates = true
+    hide_duplicate_count = false
+    show_indicators = yes
+    sort = yes
+
+    progress_bar = true
+    progress_bar_height = 8
+    progress_bar_frame_width = 1
+    progress_bar_min_width = 150
+    progress_bar_max_width = 400
+    progress_bar_corner_radius = 0
+
+    # Иконки только от самих приложений: у текстовых уведомлений их нет, как в TUI
+    icon_position = left
+    icon_corner_radius = 0
+    min_icon_size = 0
+    max_icon_size = 48
+    enable_recursive_icon_lookup = true
+    icon_theme = Adwaita
+
+    sticky_history = yes
+    history_length = 20
+    dmenu = /usr/bin/dmenu -p dunst:
+    browser = /usr/bin/xdg-open
+    always_run_script = true
+    title = Dunst
+    class = Dunst
+    ignore_dbusclose = false
+    force_xwayland = false
+    force_xinerama = false
+
+    mouse_left_click = close_current
+    mouse_middle_click = do_action, close_current
+    mouse_right_click = close_all
+
+[urgency_low]
+    background = "#000000e6"
+    foreground = "#a6a69c"
+    frame_color = "#3a3a3a"
+    highlight = "#a6a69c"
+    format = "<b>  %s</b>\n%b"
+    timeout = 5
+
+[urgency_normal]
+    background = "#000000e6"
+    foreground = "#c5c9c5"
+    frame_color = "#8ea4a2"
+    highlight = "#8ea4a2"
+    timeout = 5
+    override_pause_level = 30
+
+[urgency_critical]
+    background = "#000000e6"
+    foreground = "#c5c9c5"
+    frame_color = "#c4746e"
+    highlight = "#c4746e"
+    format = "<span foreground='#c4746e'><b>▶ %s</b></span>\n%b"
+    timeout = 15
+    override_pause_level = 60
+
+# Предупреждение от MyScripts/battery-guard.sh
+[battery_warning]
+    appname = "battery-guard"
+    set_transient = yes
+    frame_color = "#c4b28a"
+    format = "<span foreground='#c4b28a'><b>▶ %s</b></span>\n%b"
+
+# Приложения могут просить не закрывать уведомление никогда (Firefox присылает
+# таймаут 0), а время от клиента важнее timeout из секций выше. Свои таймауты
+# вроде -t 800 это правило не трогает.
+[no_sticky]
+    match_dbus_timeout = 0
+    override_dbus_timeout = 5
+
+# Отклик собственных скриптов и хоткеев (профиль, край ws, тачпад, время) — не
+# уведомления: режимы ниже их не трогают, иначе hide-режим сообщал бы о новом
+# уведомлении при каждой смене профиля. Метка transient ни на что больше не
+# влияет (idle_threshold не задан). Эти секции должны идти раньше режимов.
+[own_notify_send]
+    appname = "notify-send"
+    set_transient = yes
+
+[own_touchpad]
+    appname = "Touchpad"
+    set_transient = yes
+
+[own_wallpaper]
+    appname = "Wallpaper"
+    set_transient = yes
+
+# Раскладку переключают часто: в истории такие записи вытесняли бы настоящие уведомления
+[own_layout]
+    appname = "Layout"
+    set_transient = yes
+    history_ignore = yes
+
+# Режимы вкладки NOTIF в dashboard (клавиши S и C), переключаются через
+# dunstctl rule <имя> enable|disable. Текст остаётся в истории и виден в NOTIF.
+# dunstctl reload и перезапуск dunst возвращают обычный режим.
+# set_transient в silent_mode отключает и звук: правило notif_sound ниже такие
+# уведомления уже не подхватит.
+[silent_mode]
+    enabled = false
+    match_transient = no
+    skip_display = true
+    set_transient = yes
+
+[hide_mode]
+    enabled = false
+    match_transient = no
+    format = "<span foreground='#8ea4a2'>●</span>"
+    icon_position = off
+    override_dbus_timeout = 1
+
+# Звук нового уведомления. Громкость и mute задаются в dashboard (NOTIF, AUDIO).
+[notif_sound]
+    match_transient = no
+    script = ~/.config/hypr/MyScripts/notif-sound.sh
