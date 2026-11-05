@@ -41,7 +41,8 @@ hl.on("hyprland.start", function()
     hl.exec_cmd("dunst")
     hl.exec_cmd("~/.config/hypr/MyScripts/battery-guard.sh")
     hl.exec_cmd("~/.config/hypr/MyScripts/layout-notify.sh")
-    hl.exec_cmd("foot --server --socket /tmp/foot-pov.sock")
+    hl.exec_cmd("hypridle")
+    hl.exec_cmd("/usr/lib/hyprpolkitagent/hyprpolkitagent")
 end)
 
 -------------------------------
@@ -130,6 +131,8 @@ hl.config({
     misc = {
         force_default_wallpaper = 0,
         disable_hyprland_logo   = true,
+        -- Если hyprlock упадёт, его можно запустить снова из tty и разблокироваться
+        allow_session_lock_restore = true,
     },
 })
 
@@ -152,10 +155,18 @@ hl.config({
     },
 })
 
+-- Свайп тремя пальцами. Встроенное действие "workspace" идёт по номерам: со стола 6
+-- попадало на id 7 (стол 1, профиль 2), а файлы профилей не обновлялись. Поэтому
+-- идём через ws-navigate.sh, как и с клавиатуры.
 hl.gesture({
     fingers   = 3,
-    direction = "horizontal",
-    action    = "workspace",
+    direction = "left",
+    action    = function() hl.exec_cmd(navigate .. " right") end,
+})
+hl.gesture({
+    fingers   = 3,
+    direction = "right",
+    action    = function() hl.exec_cmd(navigate .. " left") end,
 })
 
 hl.device({
@@ -172,6 +183,7 @@ hl.bind(mainMod .. " + Y", hl.dsp.exec_cmd(fileManager))
 hl.bind(mainMod .. " + F", hl.dsp.exec_cmd(browser))
 hl.bind(mainMod .. " + R", hl.dsp.exec_cmd(pdfViewer))
 hl.bind("CTRL + ALT + S", hl.dsp.exec_cmd("rofi -show drun"))
+hl.bind(mainMod .. " + L", hl.dsp.exec_cmd("pidof hyprlock || hyprlock"))
 
 -- Закрыть активное окно (аналог killactive: hl.dsp.window.close() без
 -- аргументов = закрыть активное окно; подтверждено официальным примером)
