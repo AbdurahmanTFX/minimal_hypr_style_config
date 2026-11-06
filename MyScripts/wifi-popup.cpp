@@ -529,7 +529,7 @@ class WifiApp {
     if (!found_active)
       active_row.push_back(text("○ не подключено") | dim);
     if (uplink_.online && uplink_.primary.wired())
-      active_row.push_back(text("   󰈀 интернет идёт по кабелю") |
+      active_row.push_back(text("   интернет идёт по кабелю") |
                            color(Color::Cyan));
     active_row.push_back(filler());
     if (scanning_)

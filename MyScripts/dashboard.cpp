@@ -224,10 +224,10 @@ std::string NetworkLine(const net::Status& s) {
     return l.wired() ? std::string("Кабель") : "Wi-Fi «" + l.connection + "»";
   };
   if (s.links.empty())
-    return "󰌙  Отключён";
+    return "  Отключён";
   if (!s.online)
-    return "󰌙  " + name(s.links[0]) + " — без интернета";
-  std::string out = (s.primary.wired() ? "󰈀  " : "󰖩  ") + name(s.primary);
+    return "  " + name(s.links[0]) + " — без интернета";
+  std::string out = "  " + name(s.primary);
   if (const net::Link* w = s.idle_wifi())
     out += "  (Wi-Fi «" + w->connection + "» в запасе)";
   return out;
