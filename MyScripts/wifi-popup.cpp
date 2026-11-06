@@ -9,6 +9,7 @@
 #include <ftxui/component/component.hpp>
 #include <ftxui/component/event.hpp>
 #include "layout_keys.hpp"
+#include "net_status.hpp"
 #include <ftxui/component/screen_interactive.hpp>
 #include <ftxui/dom/elements.hpp>
 #include <ftxui/screen/color.hpp>
@@ -207,6 +208,13 @@ class WifiApp {
     return nets;
   }
 
+  // Через что сейчас идёт интернет: Wi-Fi может быть подключён, а трафик
+  // при этом идти по кабелю.
+  net::Status ReadUplink() {
+    return net::ParseStatus(RunCapture(net::kDevicesCmd),
+                            RunCapture(net::kRoutesCmd));
+  }
+
   // Запускает перезагрузку списка сетей в фоне, чтобы не блокировать отрисовку.
   // rescan=true — сначала попросить nmcli пересканировать эфир.
   void Reload(bool rescan) {
@@ -225,9 +233,11 @@ class WifiApp {
         std::this_thread::sleep_for(std::chrono::seconds(2));
       }
       auto nets = ScanNetworks();
+      auto uplink = ReadUplink();
 
       std::lock_guard<std::mutex> lk(mu_);
       nets_ = std::move(nets);
+      uplink_ = std::move(uplink);
       if (nets_.empty())
         sel_ = 0;
       else if (sel_ >= (int)nets_.size())
@@ -301,9 +311,11 @@ class WifiApp {
       auto [code, out] = RunStatus(cmd);
 
       auto nets = ScanNetworks();
+      auto uplink = ReadUplink();
 
       std::lock_guard<std::mutex> lk(mu_);
       nets_ = std::move(nets);
+      uplink_ = std::move(uplink);
       for (size_t i = 0; i < nets_.size(); ++i) {
         if (nets_[i].ssid == ssid) {
           sel_ = (int)i;
@@ -359,8 +371,10 @@ class WifiApp {
     std::thread([this, device] {
       RunStatus("nmcli dev disconnect " + ShellQuote(device));
       auto nets = ScanNetworks();
+      auto uplink = ReadUplink();
       std::lock_guard<std::mutex> lk(mu_);
       nets_ = std::move(nets);
+      uplink_ = std::move(uplink);
       busy_ = false;
       SetStatusLocked("Отключено", false);
       Wake();
@@ -514,6 +528,9 @@ class WifiApp {
     }
     if (!found_active)
       active_row.push_back(text("○ не подключено") | dim);
+    if (uplink_.online && uplink_.primary.wired())
+      active_row.push_back(text("   󰈀 интернет идёт по кабелю") |
+                           color(Color::Cyan));
     active_row.push_back(filler());
     if (scanning_)
       active_row.push_back(text("[сканирование...] ") | color(Color::Yellow));
@@ -627,6 +644,7 @@ class WifiApp {
 
   std::mutex mu_;
   std::vector<WifiNet> nets_;
+  net::Status uplink_;
   int sel_ = 0;
   bool scanning_ = false;
   bool busy_ = false;

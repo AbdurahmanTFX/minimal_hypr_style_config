@@ -14,6 +14,7 @@
 #include <ftxui/component/component.hpp>
 #include <ftxui/component/event.hpp>
 #include "layout_keys.hpp"
+#include "net_status.hpp"
 #include <ftxui/component/screen_interactive.hpp>
 #include <ftxui/dom/elements.hpp>
 #include <ftxui/screen/color.hpp>
@@ -217,6 +218,21 @@ void FireAndForget(const std::string& cmd) {
   WaitPidBounded(pid, kSpawnTimeoutMs);
 }
 
+// Строка network во вкладке SYS: по кабелю или по Wi-Fi идёт интернет.
+std::string NetworkLine(const net::Status& s) {
+  auto name = [](const net::Link& l) {
+    return l.wired() ? std::string("Кабель") : "Wi-Fi «" + l.connection + "»";
+  };
+  if (s.links.empty())
+    return "󰌙  Отключён";
+  if (!s.online)
+    return "󰌙  " + name(s.links[0]) + " — без интернета";
+  std::string out = (s.primary.wired() ? "󰈀  " : "󰖩  ") + name(s.primary);
+  if (const net::Link* w = s.idle_wifi())
+    out += "  (Wi-Fi «" + w->connection + "» в запасе)";
+  return out;
+}
+
 // ---------------------------------------------------------------- модель --
 
 struct AudioApp {
@@ -412,10 +428,8 @@ class Dashboard {
     else
       battery = "🔋 " + cap + "%";
 
-    std::string ssid = RunCapture(
-        "nmcli -t -f active,ssid dev wifi 2>/dev/null | grep '^yes' | cut "
-        "-d: -f2");
-    std::string wifi = ssid.empty() ? "  Отключён" : "  " + ssid;
+    std::string network = NetworkLine(net::ParseStatus(
+        RunCapture(net::kDevicesCmd), RunCapture(net::kRoutesCmd)));
 
     std::string powered = RunCapture(
         "bluetoothctl show 2>/dev/null | grep 'Powered:' | awk '{print "
@@ -436,7 +450,7 @@ class Dashboard {
     kernel_ = kernel;
     uptime_ = uptime;
     battery_ = battery;
-    wifi_ = wifi;
+    network_ = network;
     bluetooth_ = bluetooth;
   }
 
@@ -1284,9 +1298,9 @@ class Dashboard {
     rows.push_back(KV("battery", battery_, Color::Green));
     rows.push_back(separator());
 
-    const char* labels[] = {"wifi", "bluetooth", "brightness"};
+    const char* labels[] = {"network", "bluetooth", "brightness"};
     std::string bri = (brightness_ >= 0) ? std::to_string(brightness_) + "%" : "N/A";
-    std::string vals[] = {wifi_, bluetooth_, bri};
+    std::string vals[] = {network_, bluetooth_, bri};
     for (int i = 0; i < 3; ++i) {
       bool sel = (i == sys_sel_);
       rows.push_back(hbox({
@@ -1542,7 +1556,7 @@ class Dashboard {
   int note_sel_ = 0;
 
   time_t last_full_refresh_ = 0;
-  std::string time_str_, date_str_, kernel_, uptime_, battery_, wifi_, bluetooth_;
+  std::string time_str_, date_str_, kernel_, uptime_, battery_, network_, bluetooth_;
   std::string layout_ = "N/A";
   int brightness_ = -1;
 
