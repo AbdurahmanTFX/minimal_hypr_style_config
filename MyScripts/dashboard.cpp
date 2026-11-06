@@ -565,18 +565,23 @@ class Dashboard {
     notif_mode_ = mode;
   }
 
+  // Special-воркспейсы отсеиваются по имени: в Hyprland 0.57 у них в
+  // hyprctl clients -j нет поля id, и прежняя проверка id>=0 их пропускала.
+  // Панели скрыты и по классу: hidden-apps-view показывается на обычном
+  // рабочем столе.
   void UpdateWindows() {
     static const char* script =
         "hyprctl clients -j 2>/dev/null | python3 -c \""
         "import sys,json;"
-        "skip={'dashboard','dashboard-term','normal-term','dashboard-popup'};"
+        "skip={'dashboard','dashboard-term','normal-term','dashboard-popup',"
+        "'profile-overview','ws-overview','hidden-apps-view'};"
         "clients=json.load(sys.stdin);"
         "[print(c.get('address','')+'|'+"
         "str(c.get('workspace',{}).get('id',0))+'|'+"
         "c.get('class','')[:30]+'|'+"
         "(c.get('title','') or c.get('class',''))[:50])"
         " for c in clients"
-        " if c.get('workspace',{}).get('id',0)>=0"
+        " if not c.get('workspace',{}).get('name','').startswith('special')"
         " and c.get('class','') not in skip]\"";
     std::string out = RunCaptureFull(script);
     std::vector<WinItem> wins;
